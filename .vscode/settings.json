@@ -1,0 +1,6 @@
+{
+    "python.defaultInterpreterPath": "/workspaces/Traffic_violation-sys/venv/bin/python",
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.inlayHints.functionReturnTypes": true,
+    "python.analysis.inlayHints.pytestParameters": true
+}
