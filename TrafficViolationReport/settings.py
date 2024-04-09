@@ -25,9 +25,8 @@ SECRET_KEY = 'django-insecure-&+rmavoqbbob3qab4ll00ck*i5pc+v6@vhxsu0nv4l2^dqho41
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
-
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '*.example.com']
+CSRF_TRUSTED_ORIGINS = ['https://localhost:8000']
 # Application definition
 
 INSTALLED_APPS = [
@@ -37,13 +36,18 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'accounts',
+    'reports',
+    'traffic_data',
+    'license_plate_insights',
+    'llm_customer_service',
 ]
 
 MIDDLEWARE = [
+    'django.middleware.csrf.CsrfViewMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -80,7 +84,7 @@ DATABASES = {
     }
 }
 
-
+AUTH_USER_MODEL = 'accounts.CustomUser'
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 

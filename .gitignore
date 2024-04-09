@@ -1,3 +1,20 @@
-/venv
-/instance
-/db sqlite
+# Ignore compiled Python files
+*.pyc
+__pycache__/
+
+# Ignore environment-specific settings
+.env
+
+# Ignore database files
+*.sqlite3
+
+# Ignore media and static files (served by web server)
+media/
+static/
+
+# Ignore local development settings
+local_settings.py
+
+# Ignore virtual environment
+venv/
+.env/
