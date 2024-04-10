@@ -9,7 +9,7 @@ __pycache__/
 *.sqlite3
 
 # Ignore media and static files (served by web server)
-
+media/
 
 # Ignore local development settings
 local_settings.py
