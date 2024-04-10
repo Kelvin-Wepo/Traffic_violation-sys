@@ -4,14 +4,11 @@ from .serializers import CustomUserSerializer
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 
 class CustomUserViewSet(viewsets.ModelViewSet):
     queryset = CustomUser.objects.all()
     serializer_class = CustomUserSerializer
-
-
-
-from django.shortcuts import redirect
 
 def custom_login(request):
     if request.method == 'POST':
@@ -27,5 +24,6 @@ def custom_login(request):
     return render(request, 'login.html')
 
 
+@login_required
 def home(request):
     return render(request, 'base.html')  # Replace 'login.html' with your login template path
