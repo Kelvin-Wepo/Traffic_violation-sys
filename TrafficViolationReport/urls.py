@@ -27,8 +27,8 @@ router.register(r'users', CustomUserViewSet)
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('login/', custom_login, name='login'),
-    path('home/', home, name='home'),
-    path('', include(router.urls)),
+    path('', home, name='home'),
+    path('api/', include(router.urls)),
     path('accounts/', include('allauth.urls')),  # Allauth URLs
     path('dj-rest-auth/', include('dj_rest_auth.urls')),  # Django Rest Auth URLs
     path('dj-rest-auth/registration/', include('dj_rest_auth.registration.urls')),  # Registration URLs
