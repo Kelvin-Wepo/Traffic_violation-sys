@@ -10,7 +10,6 @@ __pycache__/
 
 # Ignore media and static files (served by web server)
 media/
-static/
 
 # Ignore local development settings
 local_settings.py
