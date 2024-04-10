@@ -94,7 +94,7 @@ AUTHENTICATION_BACKENDS = [
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
 AUTH_USER_MODEL = 'accounts.CustomUser'
-
+LOGIN_URL = '/login/'
 # Provider specific settings
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
