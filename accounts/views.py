@@ -5,6 +5,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.urls import reverse
 
 class CustomUserViewSet(viewsets.ModelViewSet):
     queryset = CustomUser.objects.all()
@@ -17,8 +18,9 @@ def custom_login(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            # Redirect to the 'home' URL after successful login
-            return redirect('home')  # Replace 'home' with the actual URL name for your home page
+            # Redirect to the 'next' URL after successful login, or to the default URL
+            next_url = request.POST.get('next') or reverse('home')  # Replace 'home' with your default URL
+            return redirect(next_url)
         else:
             messages.error(request, 'Invalid username or password.')
     return render(request, 'login.html')

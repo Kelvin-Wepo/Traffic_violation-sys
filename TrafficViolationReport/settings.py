@@ -95,6 +95,7 @@ AUTHENTICATION_BACKENDS = [
 ]
 AUTH_USER_MODEL = 'accounts.CustomUser'
 LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/'
 # Provider specific settings
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
