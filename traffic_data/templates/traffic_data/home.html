@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% comment %}This template displays the home page of the application, including a map and search functionality for traffic violations.{% endcomment %}
+
+{% block content %}
+{% comment %}This block contains the main content for the home page, including user greeting, search functionality, and a map displaying traffic violations.{% endcomment %}
+<h2>Welcome to the Traffic Violation Reporting System</h2>
+
+{% if request.user.is_authenticated %}
+    <p>Hello, {{ request.user.username }}!</p>
+    <form action="{% url 'accounts:logout' %}" method="post">
+        {% csrf_token %}
+        <button type="submit">Logout</button>
+    </form>
+{% else %}
+    <p>Please <a href="{% url 'accounts:login' %}">login</a> to continue.</p>
+{% endif %}
+
+<div id="search-container">
+    <input type="text" id="search-keyword" placeholder="Enter keyword, license plate, or location">
+    <select id="time-range-selector" onchange="toggleCustomDateRange(this.value)">
+        <option value="all">All time</option>
+        <option value="1day">Past day</option>
+        <option value="1week">Past week</option>
+        <option value="1month">Past month</option>
+        <option value="6months">Past six months</option>
+        <option value="1year">Past year</option>
+        <option value="custom">Custom</option>
+    </select>
+    <div id="custom-date-range" style="display: none;">
+        <label for="from-date">From:</label>
+        <input type="date" id="from-date">
+        <label for="to-date">To:</label>
+        <input type="date" id="to-date">
+    </div>
+    <button onclick="searchData()">Search</button>
+</div>
+
+<div id="map-container" style="height: 400px; width: 100%;">
+    <div id="map" style="height: 100%;"></div>
+</div>
+
+<script>
+    // Define global variables
+    var map;
+    var markersArray = [];
+    var currentInfowindow = null; // Track the currently opened infowindow
+
+    function initMap() {
+        map = new google.maps.Map(document.getElementById('map'), {
+            center: {lat: 23.6978, lng: 120.9605},
+            zoom: 8,
+            mapTypeId: 'roadmap'
+        });
+
+        // Add map click event listener to close the current infowindow
+        map.addListener('click', function() {
+            if (currentInfowindow) {
+                currentInfowindow.close();
+            }
+        });
+
+        loadMarkers();
+    }
+
+    function loadMarkers() {
+        fetch('/traffic-violation-markers/')
+        .then(response => response.json())
+        .then(markers => {
+            addMarkersToMap(markers);
+        });
+    }
+
+    function toggleCustomDateRange(value) {
+        var customDateRange = document.getElementById('custom-date-range');
+        if(value === 'custom') {
+            customDateRange.style.display = 'block';
+        } else {
+            customDateRange.style.display = 'none';
+        }
+    }
+
+    function searchData() {
+        var keyword = document.getElementById('search-keyword').value;
+        var timeRange = document.getElementById('time-range-selector').value;
+        var fromDate = timeRange === 'custom' ? document.getElementById('from-date').value : null;
+        var toDate = timeRange === 'custom' ? document.getElementById('to-date').value : null;
+
+        // Clear existing markers on the map
+        clearMapMarkers();
+
+        // Build the request URL
+        var searchUrl = '/search-traffic-violations/?keyword=' + encodeURIComponent(keyword) +
+                            '&timeRange=' + encodeURIComponent(timeRange);
+        if (fromDate && toDate) {
+            searchUrl += '&fromDate=' + encodeURIComponent(fromDate) + '&toDate=' + encodeURIComponent(toDate);
+        }
+
+        // Use fetch API for AJAX call
+        fetch(searchUrl)
+        .then(response => response.json())
+        .then(markers => {
+            addMarkersToMap(markers);  // Use the newly added function to add markers
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+
+    function clearMapMarkers() {
+        for (var i = 0; i < markersArray.length; i++) {
+            markersArray[i].setMap(null);
+        }
+        markersArray = [];
+    }
+
+    function addMarkersToMap(markers) {
+        markers.forEach(function(markerData) {
+            var marker = new google.maps.Marker({
+                position: {lat: markerData.lat, lng: markerData.lng},
+                map: map,
+                title: markerData.title
+            });
+
+            marker.addListener('click', function() {
+                // Close the currently opened infowindow (if any)
+                if (currentInfowindow) {
+                    currentInfowindow.close();
+                }
+
+                fetch(`/traffic-violation-details/${markerData.traffic_violation_id}`)
+                .then(response => response.json())
+                .then(details => {
+                    var currentImageIndex = 0;
+                    var images = details.media;
+
+                    var imageSrc = images.length > 0 ? '/media/' + images[currentImageIndex] : 'path/to/default/image.jpg';
+                    var infowindowContent = '<div><strong>' + details.title + '</strong><br>' +
+                                            '<img src="' + imageSrc + '" id="infowindow-img" style="width: 150px;"><br>' +
+                                            '<button onclick="showPreviousImage()">⬅️</button>' +
+                                            '<button onclick="showNextImage()">➡️</button><br>' +
+                                            '<p>License Plate: ' + details.license_plate + '</p>' +
+                                            '<p>Violation Date: ' + details.date + '</p>' +
+                                            '<p>Violation Time: ' + details.time + '</p>' +
+                                            '<p>Violation Type: ' + details.violation + '</p>' +
+                                            '<p>Violation Location: ' + details.location + '</p>' +
+                                            '<p>Status: ' + details.status + '</p>' +
+                                            '<p>Officer: ' + (details.officer || 'None') + '</p>' +
+                                            '</div>';
+
+                    var infowindow = new google.maps.InfoWindow({
+                        content: infowindowContent
+                    });
+
+                    // Open a new infowindow and update currentInfowindow
+                    infowindow.open(map, marker);
+                    currentInfowindow = infowindow;
+
+                    window.showPreviousImage = function() {
+                        if (images.length > 1) {
+                            currentImageIndex = (currentImageIndex + images.length - 1) % images.length;
+                            document.getElementById('infowindow-img').src = '/media/' + images[currentImageIndex];
+                        }
+                    };
+
+                    window.showNextImage = function() {
+                        if (images.length > 1) {
+                            currentImageIndex = (currentImageIndex + 1) % images.length;
+                            document.getElementById('infowindow-img').src = '/media/' + images[currentImageIndex];
+                        }
+                    };
+                })
+                .catch(error => {
+                    console.error('Error fetching violation details:', error);
+                });
+            });
+
+            markersArray.push(marker);
+        });
+    }
+</script>
+
+<!-- Include Google Maps API -->
+<script src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_MAPS_API_KEY }}&callback=initMap" async defer></script>
+
+{% endblock %}
