@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <!-- Left side: submission record list -->
+        <div class="col-md-4">
+            <h3>Submission Records</h3>
+            <ul>
+                {% for record in user_records %}
+                <li>
+                    <a href="?record_id={{ record.traffic_violation_id }}">
+                        {{ record.date }} - {{ record.license_plate }}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <!-- Right side: editing area -->
+        <div class="col-md-8">
+            {% if selected_record %}
+            <h3>Edit Record</h3>
+            <!-- Form for editing records -->
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                {# Rendering other fields #}
+                {{ form.license_plate.label_tag }}: {{ form.license_plate }}<br>
+                {{ form.date.label_tag }}: {{ form.date }}<br>
+                {{ form.violation.label_tag }}: {{ form.violation }}<br>
+                {{ form.status.label_tag }}: {{ form.status }}<br>
+                {{ form.location.label_tag }}: {{ form.location }}<br>
+                {{ form.officer.label_tag }}: {{ form.officer }}<br>
+                <!-- {{ form.media.label_tag }}: {{ form.media }}<br> -->
+          
+                {# Rendering hour and minute fields #}
+                Time: {{ form.hour }} : {{ form.minute }}<br>
+                
+                {{ form.media.label_tag }}: 
+                <!-- Interface for uploading new media files -->
+                <input type="file" name="media" multiple id="media-input" accept="image/*,video/*" style="display: none;">
+                <!-- <input type="hidden" id="removed-media" name="removed_media"> -->
+                <button type="button" id="add-media-button">Add</button><br>
+                                
+                <!-- File Preview Container -->
+                <div id="file-preview-container">
+                    {% for media_url in media_urls %}
+                    <div class="file-preview" data-file-url="{{ media_url }}">
+                        <!-- Check file extension and display appropriate preview -->
+                        {% if '.jpg' in media_url or '.jpeg' in media_url or '.png' in media_url or '.gif' in media_url or '.JPG' in media_url or '.JEPG' in media_url %}
+                        <img src="{{ media_url }}" height="100">
+                        {% elif '.mp4' in media_url or '.mov' in media_url or '.wmv' in media_url %}
+                        <video height="100" controls>
+                            <source src="{{ media_url }}" type="video/mp4">
+                        </video>
+                        {% endif %}
+                        <!-- You can add delete buttons or other logic here -->
+                        <button type="button" class="remove-button" onclick="removePreloadedMedia('{{ media_url }}')">X</button>
+                    </div>
+                    {% endfor %}
+                </div>
+                <button type="submit" id="submit-button">Save Changes</button>
+                <input type="hidden" id="removed-media" name="removed_media">
+            </form>
+            {% else %}
+            <p>Please select a record to edit.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    // Define global variable to store uploaded files
+    var customFileList = [];
+
+    // Initialize button states when the page loads
+    document.addEventListener('DOMContentLoaded', function () {
+        updateButtonStates();
+    });
+
+    document.getElementById('add-media-button').addEventListener('click', function () {
+        document.getElementById('media-input').click();
+    });
+
+    document.getElementById('media-input').addEventListener('change', function (e) {
+        Array.from(e.target.files).forEach(file => {
+            customFileList.push(file);
+            createPreview(file);
+        });
+
+        updateFormFiles();
+
+        updateButtonStates(); // Update button states after files are added
+    });
+
+    document.getElementById('submit-button').addEventListener('click', function(e) {
+        e.preventDefault();
+        submitFormWithAjax();
+    });
+
+    // Update button states after each file selection or removal
+    function updateButtonStates() {
+        let mediaCount = document.querySelectorAll('#file-preview-container .file-preview').length;
+        document.getElementById('add-media-button').disabled = mediaCount >= 5;
+        document.getElementById('submit-button').disabled = mediaCount < 1 || mediaCount > 5;
+
+        // Update the states of all remove buttons
+        document.querySelectorAll('.remove-button').forEach(button => {
+            button.disabled = mediaCount <= 1;
+        });
+    }
+
+    // Update button states after file selection
+    document.getElementById('media-input').addEventListener('change', function () {
+        updateButtonStates();
+    });
+
+    function createPreview(file) {
+        let previewContainer = document.getElementById('file-preview-container');
+        let previewDiv = document.createElement('div');
+        previewDiv.classList.add('file-preview');
+        previewDiv.dataset.fileName = file.name;
+
+        // Create elements for displaying files based on their types
+        let mediaElement;
+        if (file.type.startsWith('image/')) {
+            mediaElement = new Image();
+            mediaElement.height = 100;
+        } else if (file.type.startsWith('video/')) {
+            mediaElement = document.createElement('video');
+            mediaElement.height = 100;
+            mediaElement.controls = true;
+        }
+
+        let reader = new FileReader();
+        reader.onload = function(e) {
+            mediaElement.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+
+        // Create remove button
+        let removeButton = document.createElement('button');
+        removeButton.innerText = 'X';
+        removeButton.classList.add('remove-button');
+        removeButton.onclick = function(event) { // Add event parameter
+            removeFile(file.name);
+            previewDiv.remove();
+
+            updateButtonStates(); // Update button states
+        };
+
+        // Create progress bar
+        let progressBar = document.createElement('progress');
+        progressBar.value = 0;
+        progressBar.max = 100;
+        progressBar.classList.add('progress-bar');
+        progressBar.dataset.fileName = file.name; // Used for identifying corresponding progress bar
+
+        // Append elements to the preview div
+        previewDiv.appendChild(mediaElement);
+        previewDiv.appendChild(removeButton);
+        previewDiv.appendChild(progressBar); // Append progress bar to the preview div
+
+        // Append the preview div to the container
+        previewContainer.appendChild(previewDiv);
+    }
+
+    function removeFile(fileName) {
+        customFileList = customFileList.filter(file => file.name !== fileName);
+        updateFormFiles();
+
+        // Update button states
+        updateButtonStates();
+    }
+
+    function updateFormFiles() {
+        let dataTransfer = new DataTransfer();
+        customFileList.forEach(file => dataTransfer.items.add(file));
+        document.getElementById('media-input').files = dataTransfer.files;
+    }
+
+    function uploadFile(file) {
+        let formData = new FormData();
+        formData.append('file', file);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        let xhr = new XMLHttpRequest();
+        xhr.open('POST', '{% url "reports:file_upload" %}', true);
+
+        xhr.upload.onprogress = function(e) {
+            if (e.lengthComputable) {
+                let percentComplete = (e.loaded / e.total) * 100;
+                updateProgressBar(file.name, percentComplete);
+            }
+        };
+
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                console.log('Upload complete:', xhr.responseText);
+            } else {
+                console.error('Upload failed:', xhr.responseText);
+            }
+        };
+
+        xhr.send(formData);
+    }
+
+    function updateProgressBar(fileName, progress) {
+        // Find all progress bars
+        let allProgressBars = document.querySelectorAll('.progress-bar');
+        // Loop through progress bars to find the corresponding one
+        allProgressBars.forEach(bar => {
+            if (bar.dataset.fileName === fileName) {
+            bar.value = progress; // Update progress
+            }
+        });
+    }
+
+    function removePreloadedMedia(mediaUrl) {
+        event.preventDefault(); // Prevent form from submitting automatically
+
+        console.log("Removing media:", mediaUrl);
+        // Extract filename from URL
+        let filename = mediaUrl.split('/').pop();
+
+        // Remove preview from the interface
+        let previewContainer = document.getElementById('file-preview-container');
+        let mediaDiv = previewContainer.querySelector(`[data-file-url="${mediaUrl}"]`);
+        if (mediaDiv) {
+            previewContainer.removeChild(mediaDiv);
+        }
+
+        // Add the removed media filename to the hidden form input
+        let removedMediaInput = document.getElementById('removed-media');
+        if (!removedMediaInput) {
+            removedMediaInput = document.createElement('input');
+            removedMediaInput.type = 'hidden';
+            removedMediaInput.id = 'removed-media';
+            removedMediaInput.name = 'removed_media';
+            document.forms[0].appendChild(removedMediaInput);
+        }
+
+        if (removedMediaInput.value) {
+            removedMediaInput.value += ';';
+        }
+        removedMediaInput.value += filename;
+
+        // Update button states
+        updateButtonStates();
+    }
+
+    function submitFormWithAjax() {
+        let formData = new FormData();
+        customFileList.forEach(file => {
+            formData.append('media', file);
+        });
+
+        // Get and add other form fields
+        let form = document.querySelector('form');
+        Array.from(form.elements).forEach(element => {
+            if (element.name && element.name !== 'media') {
+                formData.append(element.name, element.value);
+            }
+        });
+
+        // AJAX request
+        let xhr = new XMLHttpRequest();
+        xhr.open('POST', form.action, true);
+        xhr.setRequestHeader('X-CSRFToken', '{{ csrf_token }}');
+
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                console.log('Upload complete:', xhr.responseText);
+                // You can add post-upload success handling logic here
+            } else {
+                console.error('Upload failed:', xhr.responseText);
+                // You can add post-upload failure handling logic here
+            }
+        };
+
+        xhr.send(formData);
+    }
+</script>
+
+<style>
+    #file-preview-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .file-preview {
+        position: relative;
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 5px;
+    }
+
+    .file-preview img {
+        display: block;
+    }
+
+    .file-preview .remove-button {
+        position: absolute;
+        top: -10px;  /* Adjust as needed */
+        right: -10px; /* Adjust as needed */
+        background-color: red;
+        color: white;
+        border: none;
+        cursor: pointer;
+        border-radius: 50%;
+        padding: 0 5px;
+    }
+
+    .progress-bar {
+        width: 100%; /* Adjust width as needed */
+        margin-top: 5px;
+    }
+</style>
+{% endblock %}

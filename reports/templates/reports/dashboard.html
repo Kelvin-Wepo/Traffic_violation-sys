@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h2>Welcome, {{ request.user.username }}!</h2>
+  <p>This is your dashboard.</p>
+  
+  <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      
+      {# Rendering other fields #}
+      {{ form.license_plate.label_tag }}: {{ form.license_plate }}<br>
+      {{ form.date.label_tag }}: {{ form.date }}<br>
+      {{ form.violation.label_tag }}: {{ form.violation }}<br>
+      {{ form.status.label_tag }}: {{ form.status }}<br>
+      {{ form.location.label_tag }}: {{ form.location }}<br>
+      {{ form.officer.label_tag }}: {{ form.officer }}<br>
+      <!-- {{ form.media.label_tag }}: {{ form.media }}<br> -->
+
+      {# Rendering hour and minute fields #}
+      Time: {{ form.hour }} : {{ form.minute }}<br>
+      
+      {{ form.media.label_tag }}: 
+      <input type="file" name="media" multiple id="media-input" accept="image/*,video/*" style="display: none;">
+      <button type="button" id="add-media-button">Add</button><br>
+      
+      <!-- File Preview Container -->
+      <div id="file-preview-container"></div>
+
+      <button type="submit">Submit</button>
+  </form>
+
+  <!-- Google Maps Embed -->
+  <div id="map-container" style="height: 400px; width: 100%;">
+    <iframe
+        width="100%"
+        height="100%"
+        frameborder="0" style="border:0"
+        api_key = settings.GOOGLE_MAPS_API_KEY  # Make sure this variable is defined in settings.py
+        src="https://www.google.com/maps/embed/v1/view?key=YOUR_API_KEY&center=23.6978,120.9605&zoom=8&maptype=roadmap" allowfullscreen>
+    </iframe>
+  </div>
+
+<script>
+    var customFileList = []; // Custom file list  
+
+    // Initialize button states when the page loads
+    document.addEventListener('DOMContentLoaded', function () {
+        updateButtonStates();
+    });
+
+    document.getElementById('add-media-button').addEventListener('click', function() {
+      document.getElementById('media-input').click();
+    });
+
+    document.getElementById('media-input').addEventListener('change', function(e) {
+      Array.from(e.target.files).forEach(file => {
+        customFileList.push(file);
+        createPreview(file);
+      });
+      updateFormFiles();
+
+      updateButtonStates(); // Update button states after files are added
+    });
+
+    function updateButtonStates() {
+        let mediaCount = document.querySelectorAll('#file-preview-container .file-preview').length;
+        document.getElementById('add-media-button').disabled = mediaCount >= 5;
+        document.querySelector('form button[type="submit"]').disabled = mediaCount < 1 || mediaCount > 5;
+
+        // Update the states of all remove buttons
+        document.querySelectorAll('.remove-button').forEach(button => {
+            button.disabled = mediaCount <= 1;
+        });
+    }
+
+    function createPreview(file) {
+      let previewContainer = document.getElementById('file-preview-container');
+      let previewDiv = document.createElement('div');
+      previewDiv.classList.add('file-preview');
+      previewDiv.dataset.fileName = file.name;
+
+      // Create elements for displaying files based on their types
+      let mediaElement;
+      if (file.type.startsWith('image/')) {
+        mediaElement = new Image();
+        mediaElement.height = 100;
+      } else if (file.type.startsWith('video/')) {
+        mediaElement = document.createElement('video');
+        mediaElement.height = 100;
+        mediaElement.controls = true;
+      }
+
+      let reader = new FileReader();
+      reader.onload = function(e) {
+        mediaElement.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+
+      // Create remove button
+      let removeButton = document.createElement('button');
+      removeButton.innerText = 'X';
+      removeButton.classList.add('remove-button');
+      removeButton.onclick = function() {
+        removeFile(file.name);
+        previewDiv.remove();
+        
+        updateButtonStates(); // Update button states
+      };
+
+      // Create progress bar
+      let progressBar = document.createElement('progress');
+      progressBar.value = 0;
+      progressBar.max = 100;
+      progressBar.classList.add('progress-bar');
+      progressBar.dataset.fileName = file.name; // Used for identifying corresponding progress bar
+
+      // Append elements to the preview div
+      previewDiv.appendChild(mediaElement);
+      previewDiv.appendChild(removeButton);
+      previewDiv.appendChild(progressBar); // Append progress bar to the preview div
+
+      // Append the preview div to the container
+      previewContainer.appendChild(previewDiv);
+    }
+
+    function removeFile(fileName) {
+      customFileList = customFileList.filter(file => file.name !== fileName);
+      updateFormFiles();
+
+      updateButtonStates(); // Update button states after files are added
+    }
+
+    function updateFormFiles() {
+      let dataTransfer = new DataTransfer();
+      customFileList.forEach(file => dataTransfer.items.add(file));
+      document.getElementById('media-input').files = dataTransfer.files;
+    }
+
+    document.getElementById('submit-button').addEventListener('click', function(e) {
+      e.preventDefault();
+      customFileList.forEach(file => {
+        uploadFile(file);
+      });
+    });
+
+    function uploadFile(file) {
+        let formData = new FormData();
+        formData.append('file', file);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        let xhr = new XMLHttpRequest();
+        xhr.open('POST', '{% url "reports:file_upload" %}', true);
+
+        xhr.upload.onprogress = function(e) {
+            if (e.lengthComputable) {
+                let percentComplete = (e.loaded / e.total) * 100;
+                updateProgressBar(file.name, percentComplete);
+            }
+        };
+
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                console.log('Upload complete:', xhr.responseText);
+            } else {
+                console.error('Upload failed:', xhr.responseText);
+            }
+        };
+
+        xhr.send(formData);
+    }
+
+    function updateProgressBar(fileName, progress) {
+      // Find all progress bars
+      let allProgressBars = document.querySelectorAll('.progress-bar');
+      // Loop through progress bars to find the corresponding one
+      allProgressBars.forEach(bar => {
+        if (bar.dataset.fileName === fileName) {
+          bar.value = progress; // Update progress
+        }
+      });
+    }
+  </script>
+
+<style>
+  #file-preview-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .file-preview {
+    position: relative;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 5px;
+  }
+
+  .file-preview img {
+    display: block;
+  }
+
+  .file-preview .remove-button {
+    position: absolute;
+    top: -10px;  /* Adjust as needed */
+    right: -10px; /* Adjust as needed */
+    background-color: red;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 50%;
+    padding: 0 5px;
+  }
+
+  .progress-bar {
+    width: 100%; /* Adjust width as needed */
+    margin-top: 5px;
+  }
+</style>
+{% endblock %}
