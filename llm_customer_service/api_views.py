@@ -14,17 +14,17 @@ def chat_with_gemini_api(request):
     if request.method == 'POST':
         try:
             user_id = request.user.id
-            # 获取用户输入
+            
             user_input = json.loads(request.body).get('message')
             
-            # 从数据库获取先前的对话记录
+            
             previous_conversations = Conversation.objects.filter(user_id=user_id).order_by('-timestamp')[:20]
             dialog_history = "\n".join([conv.message + "\n" + conv.response for conv in reversed(previous_conversations)])
 
-            # 调用 Gemini API，传递历史对话和用户输入
+            
             response = call_gemini_api(user_input, dialog_history)
 
-            # 保存新对话到数据库
+            
             new_conversation = Conversation(user_id=user_id, message=user_input, response=response)
             new_conversation.save()
 
