@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% comment %}This template handles the login functionality for the application.{% endcomment %}
+{% load static %}
+
+{% block content %}
+  <h2>登入</h2>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Login</button>
+    <a href="{% url 'register' %}">Register</a>    
+  </form>
+{% endblock %}
+
+  <!-- 添加 Facebook 登入按鈕 -->
+  <!-- <a href="{% url 'socialaccount_login' 'facebook' %}"class="button">Facebook login</a> -->
