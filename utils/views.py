@@ -11,7 +11,7 @@ from django.contrib import messages
 from typing import Tuple, Optional, List
 from reports.forms import ReportForm
 from reports.models import TrafficViolation, MediaFile
-from .mysql_utils import (
+from .database_utils import (
     update_media_files,
 )
 
