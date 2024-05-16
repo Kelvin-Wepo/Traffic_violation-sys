@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-&+rmavoqbbob3qab4ll00ck*i5pc+v6@vhxsu0nv4l2^dqho41
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '*.example.com']
+ALLOWED_HOSTS = ['*']
 CSRF_TRUSTED_ORIGINS = ['https://localhost:8000']
 
 
@@ -93,7 +93,7 @@ AUTHENTICATION_BACKENDS = [
     # `allauth` specific authentication methods, such as login by email
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
-AUTH_USER_MODEL = 'accounts.CustomUser'
+
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 # Provider specific settings
@@ -138,12 +138,20 @@ ACCOUNT_EMAIL_VERIFICATION = 'none'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+
+
+# settings.py
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'Africas',    # Replace 'your_database_name' with your actual database name
+        'USER': 'kwepo',    # Replace 'your_database_user' with your actual database user
+        'PASSWORD': 'Access',    # Replace 'your_database_password' with your actual database password
+        'HOST': 'localhost',    # Or the IP address of your PostgreSQL server
+        'PORT': '5432',          # Or the port your PostgreSQL server is listening on
     }
 }
+
 
 
 # Internationalization
@@ -172,6 +180,7 @@ STATICFILES_DIRS = [
 ]
 
 
+GOOGLE_MAPS_API_KEY ='AIzaSyB85LQ0LlYnWmPJnUGjLhAPwY3UreIFrw0'
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
