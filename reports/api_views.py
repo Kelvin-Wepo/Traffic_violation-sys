@@ -5,11 +5,11 @@ from rest_framework import status
 from .serializers import TrafficViolationSerializer, MediaFileSerializer
 from .forms import ReportForm
 from .models import TrafficViolation, MediaFile
-from utils.utils import (
-    process_input, 
-    ReportManager,
-)
-from utils.mysql_utils import (
+# from utils.utils import (
+#     process_input, 
+#     ReportManager,
+# )
+from utils.database_utils import (
     get_user_records,
 )
 

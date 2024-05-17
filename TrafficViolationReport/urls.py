@@ -1,38 +1,45 @@
-"""
-URL configuration for TrafficViolationReport project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/4.2/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from rest_framework.routers import DefaultRouter
-from accounts.views import CustomUserViewSet, custom_login, home
+from django.contrib.auth.views import LogoutView
 
-router = DefaultRouter()
-router.register(r'users', CustomUserViewSet)
+#Import JWT view
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+
+# Import your view
+from traffic_data.views import home
+from reports.views import dashboard, edit_report
+from accounts.views import login, register, account_view
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('login/', custom_login, name='login'),
-    path('', home, name='home'),
-    path('api/', include(router.urls)),
-    path('accounts/', include('allauth.urls')),  # Allauth URLs
-    path('dj-rest-auth/', include('dj_rest_auth.urls')),  # Django Rest Auth URLs
-    path('dj-rest-auth/registration/', include('dj_rest_auth.registration.urls')),  # Registration URLs
-]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+     # Management background
+     path('admin/', admin.site.urls),
+    
+     # JWT Authentication URL
+     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    
+     # URL of the core application
+     path('', home, name='home'),
+     path('dashboard/', dashboard, name='dashboard'),
+     path('edit-report/', edit_report, name='edit_report'),
+    
+     #User authentication related URL
+     path('login/', login, name='login'),
+     path('register/', register, name='register'),
+     path('account/', account_view, name='account_view'),
+     path('logout/', LogoutView.as_view(), name='logout'),
+    
+     # Contains URLs for other applications
+     path('reports/', include('reports.urls', namespace='reports')),
+     path('accounts/', include('accounts.urls', namespace='accounts')),
+     path('accounts/auth/', include('allauth.urls')),
+     path('', include('traffic_data.urls', namespace='traffic_data')),
+     path('license_plate_insights/', include('license_plate_insights.urls', namespace='license_plate_insights')),
+     path('llm_customer_service/', include('llm_customer_service.urls', namespace='llm_customer_service')),
+]
 
+# Provide media files in the development environment
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

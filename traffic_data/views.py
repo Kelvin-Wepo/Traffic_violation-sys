@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.conf import settings
-from utils.mysql_utils import (
+from utils.database_utils import (
     get_traffic_violation_markers,
     get_traffic_violation_details,
     search_traffic_violations,

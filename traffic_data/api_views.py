@@ -2,7 +2,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from reports.models import TrafficViolation
 from .serializers import TrafficViolationSerializer, TrafficViolationMarkerSerializer
-from utils.mysql_utils import (
+from utils.database_utils import (
     get_traffic_violation_markers,
     get_traffic_violation_details,
     search_traffic_violations,

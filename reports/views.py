@@ -3,11 +3,11 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from .forms import ReportForm
 from .models import TrafficViolation, MediaFile
-from utils.utils import (
-    process_input, 
-    ReportManager,
-)
-from utils.mysql_utils import (
+# from utils.utils import (
+#     process_input, 
+#     ReportManager,
+# )
+from utils.database_utils import (
     get_user_records,
 )
 
@@ -31,10 +31,10 @@ def dashboard(request):
     if request.method == 'POST':
         form = ReportForm(request.POST, request.FILES)
         if form.is_valid():
-            
+            # 处理输入并提取位置信息
             address, latitude, longtitude, user_input_type = process_input(form.cleaned_data['location'])
 
-            # TrafficViolation 
+            # 创建一个新的 TrafficViolation 实例
             traffic_violation = TrafficViolation(
                 license_plate=form.cleaned_data['license_plate'],
                 date=form.cleaned_data['date'],
@@ -50,14 +50,14 @@ def dashboard(request):
             )
             traffic_violation.save()
 
-            
+            # 处理文件上传
             for file in request.FILES.getlist('media'):
                 MediaFile.objects.create(
                     traffic_violation=traffic_violation,
                     file=file
                 )
 
-            messages.success(request, 'Report submission successful.')
+            messages.success(request, '报告提交成功。')
             return redirect('dashboard')
     else:
         form = ReportForm()
