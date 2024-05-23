@@ -143,10 +143,10 @@ ACCOUNT_EMAIL_VERIFICATION = 'none'
 # settings.py
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'Africas',    # Replace 'your_database_name' with your actual database name
-        'USER': 'kwepo',    # Replace 'your_database_user' with your actual database user
-        'PASSWORD': 'Access',    # Replace 'your_database_password' with your actual database password
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'Traffic_Violation',    # Replace 'your_database_name' with your actual database name
+        'USER': 'Kwepo',    # Replace 'your_database_user' with your actual database user
+        'PASSWORD': '@Access7710',    # Replace 'your_database_password' with your actual database password
         'HOST': 'localhost',    # Or the IP address of your PostgreSQL server
         'PORT': '5432',          # Or the port your PostgreSQL server is listening on
     }
