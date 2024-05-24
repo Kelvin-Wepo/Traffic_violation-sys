@@ -169,15 +169,16 @@ USE_TZ = True
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = 'dashboard'
+LOGOUT_REDIRECT_URL = 'login'
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = '/static/'  # URL prefix for static files
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static/assets'),  # Path to your static files directory
-]
+STATIC_URL = '/static_root/'
+STATIC_ROOT = BASE_DIR / 'static_root'  # Directory for collectstatic to collect static files
 
 
 GOOGLE_MAPS_API_KEY ='AIzaSyB85LQ0LlYnWmPJnUGjLhAPwY3UreIFrw0'
