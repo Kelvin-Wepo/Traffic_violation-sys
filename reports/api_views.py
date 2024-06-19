@@ -9,7 +9,7 @@ from .models import TrafficViolation, MediaFile
 #     process_input, 
 #     ReportManager,
 # )
-from utils.database_utils import (
+from utils.mysql_utils import (
     get_user_records,
 )
 
