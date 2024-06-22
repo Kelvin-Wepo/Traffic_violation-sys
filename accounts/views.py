@@ -4,15 +4,12 @@ from django.contrib.auth.views import LoginView
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import authenticate, login as auth_login
-from django.core.mail import send_mail
 from django.contrib import messages
 from django.http import JsonResponse
-from django.conf import settings
+from django.utils import timezone
 from rest_framework.response import Response
 from .forms import CustomUserCreationForm, EmailChangeForm
 from .models import UserProfile
-# from utils.utils import generate_random_code
-from django.utils import timezone
 import datetime
 
 def login(request, *args, **kwargs):
@@ -47,7 +44,7 @@ def register(request):
             if user is not None:
                 auth_login(request, user)
 
-            return redirect('accounts:verify')
+            return redirect('home')  # Redirect to home after successful registration
     else:
         form = CustomUserCreationForm()
 
@@ -57,56 +54,9 @@ def create_user_profile(user):
     """
     Create a user profile for the newly registered user.
     """
-    code = generate_random_code()
-    verification_code_expiry = timezone.now() + datetime.timedelta(minutes=30)
     UserProfile.objects.create(
         user=user, 
-        email_verified_code=code, 
-        verification_code_expiry=verification_code_expiry
     )
-    send_verification_email(user.email, code)
-
-def send_verification_email(email, code):
-    """
-    Send an email containing the verification code.
-    """
-    subject = "Verify Your Account"
-    message = f"Your verification code is: {code}"
-    send_mail(
-        subject=subject,
-        message=message,
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[email],
-        fail_silently=False,
-    )
-
-def verify(request):
-    if request.method == 'POST':
-        code = request.POST.get('code')
-        if not code:
-            messages.error(request, 'Please enter a verification code.')
-            return render(request, 'accounts/verify.html')
-
-        try:
-            profile = UserProfile.objects.get(email_verified_code=code)
-            if profile.is_verification_code_expired():
-                messages.error(request, 'The verification code has expired.')
-                return render(request, 'accounts/verify.html')
-
-            profile.email_verified = True
-            profile.email_verified_code = ''
-            profile.save()
-
-            user = profile.user
-            auth_login(request, user, backend='django.contrib.auth.backends.ModelBackend')
-
-            messages.success(request, 'Your account has been successfully verified.')
-            return redirect('home')
-        except UserProfile.DoesNotExist:
-            messages.error(request, 'Invalid verification code.')
-            return render(request, 'accounts/verify.html')
-    else:
-        return render(request, 'accounts/verify.html')
 
 @login_required
 def account_view(request):
